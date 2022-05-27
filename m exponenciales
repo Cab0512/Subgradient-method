@@ -67,7 +67,7 @@ gexp <- function(x,par){
 
 dexp<-function(d,par1,j){
   a=0
-  a=par1[j]^2*exp(-d/par2[j])
+  a=2*par1[j]*exp(-d/par2[j])
 }
 
 #para 1 exponencial
