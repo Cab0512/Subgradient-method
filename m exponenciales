@@ -109,7 +109,7 @@ dexpm<-function(X,dp,du,par,mc,gexp){
   sumf<-function (d,i,j){
     a=0
     if (i==j){
-      a=sum(f1(d,1))*2
+      a=sum(f1(d,i))*2
     }
     return(a)
   }
