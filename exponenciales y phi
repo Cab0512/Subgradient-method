@@ -46,6 +46,8 @@ lavn<- function(X,g,est,jac,inipar,tol,kmax,mc=1000, trace = TRUE){
     jacob=solve(jacob)
     para=par
     step=jacob%*%gra
+    print(jacob)
+    print(gra)
     par=par-(step)[,1]
     e=sqrt(sum((para-par)*(para-par)))/sqrt(sum(para*para))
     if(e<tol){
@@ -192,10 +194,10 @@ dexpm<-function(X,dp,du,par1,mc,gexp){
 
 dexp(c(0,0.2),par,2)
 par
-par=c(0.7,0.7,log(0.15),log(0.22))
+par=c(0.7,5,log(0.15),log(3))
 n=length(par)
 par[n-1]
 par^2 
 exp(par)
 
-re<-lavn(X,gexp,dexp,dexpm,inipar=par,tol= 1e-15,kmax=100,mc=1000, trace = TRUE)
+re<-lavn(X,gexp,dexp,dexpm,inipar=par,tol= 1e-15,kmax=1000,mc=1000, trace = TRUE)
