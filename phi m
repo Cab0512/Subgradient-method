@@ -1,0 +1,142 @@
+rm(list = ls())
+library(spatstat)
+library(cubature)
+#simulacion LGCP
+N=500
+sig=1
+W=square(1) ### 1.- Considerar el tamaño de la ventana en las integrales
+Warea=spatstat.geom::area(W)
+mu0=log(N/Warea)-sig/2
+phi=0.15
+X <- rLGCP(model="exp", mu=mu0, var=sig, scale=phi, win = W) ### (*).- Crear mi propio simulador de LGCP
+Z<-attr(X,"Lambda")
+plot(Z)
+points(X,pch=16)
+
+X
+plot(Z)
+rmax <- 0.2 ### 2.- Añadirlo como parte de las funciones que necesiten closepairs y crosspairs
+P<-closepairs(X,rmax,twice = TRUE) 
+#Supuestos:
+#Homogeneidad
+#Estacioneriedad
+#las funcion jac pide el proceso puntual (para calcular la sumatoria) y un conjunto de puntos (para calcular la integral por el metodo montecarlo)
+#la funcion jac devuelve una matriz 
+#la funciones pcf, y est devuelven un vector
+#la funcion est pide la cordenada que se desea calcular
+#Mejora entregar dos listas de parametros uno que sean lineales y otros no lineales
+
+par2=c(1,0.5)
+
+
+#Considerar diferentes w_{ij}
+lavn<- function(X,g,est,jac,inipar,tol,kmax,mc=1000, trace = TRUE){
+  W=X$w ### 1.- Considerar el tamaño de la ventana en las integrales
+  Warea=spatstat.geom::area(W)
+  x0<-runifpoint(mc,win=W)
+  y0<-runifpoint(mc,win=W)
+  dU<-crosspairs(x0,y0,rmax,what="ijd")
+  P<-closepairs(X,rmax,twice = TRUE)
+  par=inipar
+  for(i in 1:kmax){
+    r=c()
+    for (j in 1:length(par)) {
+      s=sum(est(P$d,par,j))
+      int=(Warea)^2*1/mc*1/mc*sum(g(dU$d,par)*est(dU$d,par,j))*(intensity(X))^2
+      e=s-int
+      r=c(r,e)
+    }
+    gra=r
+    jacob=jac(X,P$d,dU$d,par,mc,g)
+    jacob=solve(jacob)
+    para=par
+    step=jacob%*%gra
+    print(jacob)
+    print(gra)
+    par=par-(step)[,1]
+    e=sqrt(sum((para-par)*(para-par)))/sqrt(sum(para*para))
+    if(e<tol){
+      return(par)}
+    if(trace) cat(exp(par), i, "\n")
+  }
+  return(par)
+}
+
+
+
+gexp <- function(x,par){
+  n=length(par)
+  a=0
+  for (i in 1:n){
+    a=a+par2[i]^2*exp(-x/exp(par[i]))
+  }
+  a=exp(a)
+  return(a)
+}
+
+dexp<-function(d,par1,j){
+  a=0
+  a=par2[j]^2*exp(-d/exp(par1[j]))*exp(-par1[j])*d
+  return(a)
+}
+
+
+dexpm<-function(X,dp,du,par1,mc,gexp){
+  ja=c()
+  W=X$w ### 1.- Considerar el tamaño de la ventana en las integrales
+  Warea=spatstat.geom::area(W)
+  rho=(intensity(X))^2
+  n=length(par1)
+  jac=matrix(,nrow=n,ncol=n)
+  f1<- function(d,i){
+      e=exp(-d/par1[i])
+      return(e)
+  }
+  sumf2<-function (d,i,j){
+    a=0
+    if (i==j){
+      a=par2[i]^2*f1(d,i)*exp(-par1[i])*d*(exp(-par1[i])*d-1)
+      a=sum(a)
+    }
+    return(a)
+  }
+  intf2<-function(d,i,j){
+    a=0
+    if (i==j){
+      a =gexp(d,par1)*f1(d,i)*par2[i]^2 *exp(-par1[i])*d*(f1(d,i)*exp(-par1[i])*d*par2[i]^2+exp(-par1[i])*d-1)
+    }
+    else {
+      a=par2[i]^2*par2[j]^2*f1(d,i)*f1(d,j)*gexp(du,par1)*exp(-par1[i])*exp(-par1[j])*d^2
+    }
+    a=sum(a)*(1/mc)*(1/mc)*(Warea)^2*rho
+    return(a)
+  }
+  for (i in 1:(n)){
+    for (j in 1:(n)){
+      su=sumf2(dp,i,j)
+      int=intf2(du,i,j)
+      ij=su-int
+      jac[i,j]=ij
+      jac[j,i]=ij
+    }
+    
+  }
+  
+  return(jac)
+}
+
+
+#no me funciona  min.cv <- mincontrast(observed = pcf(X), gexp(x,par), startpar = c(sqrt(0.5),sqrt(0.5),sqrt(0.5),sqrt(0.5),sqrt(0.5)))
+# idem anterior min.cv <- mincontrast(observed = pcf(X), theoretical = function(x,par){ exp((par[1]^2)*exp(-x/0.15)+(par[2]^2)*exp(-x/0.25)+(par[3]^2)*exp(-x/0.35)+(par[4]^2)*exp(-x/0.45)+(par[5]^2)*exp(-x/0.55))}, startpar = c(sqrt(0.5),sqrt(0.5),sqrt(0.5),sqrt(0.5),sqrt(0.5)))
+# min.cv
+#pcf(X)
+
+result<-dexp(0.5,par,2)
+par
+
+par=c(log(0.16),log(0.02))
+
+
+re<-lavn(X,gexp,dexp,dexpm,inipar=par,tol= 1e-15,kmax=1000,mc=1000, trace = TRUE)
+
+#probar hasta aqui
