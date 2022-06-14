@@ -52,7 +52,7 @@ for (i in 1:kmax){
     }
     lasscoef=matrix(lamb*sign(bant), nrow = length(bant), ncol = 1)
     b=bant-pas*(Hes%*%(gra+lasscoef))[,1]
-    f=fob(x,y,b)
+    f=fob(x,y,b)+nor(b)*lamb
     if(f<fant){
       flag=FALSE
     }
