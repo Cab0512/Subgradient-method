@@ -1,0 +1,63 @@
+nor<-function(y) {sum(y*y)^0.5} 
+fob<-function(x,y,b){
+  a=y-(x%*%b)[,1]
+  r=nor(a)
+  return(r)
+}
+
+
+grad<-function(x,y,b){
+  g=-2*t(x)%*%(y-(x%*%b)[,1])
+  return(g)
+}
+Hesian <-function(x){
+  he=2* t(x)%*%x
+  return(he)
+}
+
+kmax=100
+factor=(0.5)
+lamb=0.5
+
+#valores verdaderos
+b=c(1,2)
+x=matrix(1:10, nrow = 5, ncol = 2)
+y=x%*%b+matrix(rnorm(5,0,2), nrow = 5, ncol = 1)
+
+
+#estimacion
+b=c(0,1)
+f=fob(x,y,b)
+Hes=solve(Hesian(x))
+gra=grad(x,y,b)
+(Hes%*%gra)[,1]
+flag2=FALSE 
+tol=0.00001
+
+
+for (i in 1:kmax){
+  fant=f
+  flag=TRUE
+  pas=1
+  bant=b
+  print(b)
+  if (flag2){
+    break
+  }
+  while(flag){
+    gra=grad(x,y,b)
+    if(nor(gra)<tol){
+      flag=TRUE
+      flag2=TRUE
+    }
+    lasscoef=matrix(lamb*sign(bant), nrow = length(bant), ncol = 1)
+    b=bant-pas*(Hes%*%(gra+lasscoef))[,1]
+    f=fob(x,y,b)
+    if(f<fant){
+      flag=FALSE
+    }
+    else{
+      pas=pas*factor
+    }
+  }
+}
