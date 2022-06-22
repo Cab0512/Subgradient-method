@@ -14,26 +14,50 @@ Hesian <-function(x){
   he=2* t(x)%*%x
   return(he)
 }
+solve(he)
+
+
+
+
+sto<-function(y,lam){
+  for (i in (1:length(y))){
+    if(abs(y[i])<=lam){
+      y[i]=0
+    }
+    else { y[i]=y[i]-sign(y[i])*lam}
+  }
+  return(y)
+}
+
+x=M
 
 kmax=100
-factor=(0.5)
-lamb=0.5
+factor=0.5
+
 
 #valores verdaderos
-b=c(1,2)
-x=matrix(1:10, nrow = 5, ncol = 2)
-y=x%*%b+matrix(rnorm(5,0,2), nrow = 5, ncol = 1)
+kf=10
+kv=10
+bv=c(10,7,3,-1,-8,-4,7,-8,1,-20)
+bv=c(bv,c(0,0,0,0,0,0,0,0,0,0))
 
+x<- matrix( runif(100*20,0,100), nrow = 100,ncol=20)
+x
+length(bv)
+y=x%*%bv+matrix(rnorm(50,0,2), nrow = 100, ncol = 1)
 
 #estimacion
-b=c(0,1)
-f=fob(x,y,b)
+b=c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1)
+length(b)
+f=fob(x,y,b)+lam*sum(abs(b))
 Hes=solve(Hesian(x))
 gra=grad(x,y,b)
 (Hes%*%gra)[,1]
 flag2=FALSE 
 tol=0.00001
-
+lam=0.2
+gra
+Hes
 
 for (i in 1:kmax){
   fant=f
@@ -41,18 +65,11 @@ for (i in 1:kmax){
   pas=1
   bant=b
   print(b)
-  if (flag2){
-    break
-  }
   while(flag){
     gra=grad(x,y,b)
-    if(nor(gra)<tol){
-      flag=TRUE
-      flag2=TRUE
-    }
-    lasscoef=matrix(lamb*sign(bant), nrow = length(bant), ncol = 1)
-    b=bant-pas*(Hes%*%(gra+lasscoef))[,1]
-    f=fob(x,y,b)+nor(b)*lamb
+    b=bant-pas*(Hes%*%(gra))[,1]
+    b=sto(b,lam)
+    f=fob(x,y,b)+lam*sum(abs(b))
     if(f<fant){
       flag=FALSE
     }
