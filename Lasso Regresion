@@ -31,6 +31,7 @@ sto<-function(y,lam){
 
 x=M
 
+#parametros
 kmax=100
 factor=0.5
 
@@ -38,7 +39,7 @@ factor=0.5
 #valores verdaderos
 kf=10
 kv=10
-bv=c(10,7,3,-1,-8,-4,7,-8,1,-20)
+bv=c(10,7,3,-1,-8,-4,7,-8,1,-10)
 bv=c(bv,c(0,0,0,0,0,0,0,0,0,0))
 
 x<- matrix( runif(100*20,0,100), nrow = 100,ncol=20)
@@ -54,27 +55,60 @@ Hes=solve(Hesian(x))
 gra=grad(x,y,b)
 (Hes%*%gra)[,1]
 flag2=FALSE 
-tol=0.00001
-lam=0.2
+tol=0.01
+lam=20
 gra
 Hes
 
+
+l=c()
+for (i in 100:1){
+  l=c(l,i*0.2)
+}
+
+p<- matrix(  nrow = length(l),ncol=length(b))
+
+
+for (j in 1:length(l)){
+  lam=l[j]
+  f=fob(x,y,b)+lam*sum(abs(b))
+  Hes=solve(Hesian(x))
+  gra=grad(x,y,b)
+  flag2=FALSE 
+  tol=0.01
+  tol2=0.0000000000001
+  print(j)
 for (i in 1:kmax){
   fant=f
   flag=TRUE
   pas=1
+  if(i!=1){
+    if(max(abs(b-bant))<tol){
+      break
+    }
+  }
   bant=b
-  print(b)
   while(flag){
     gra=grad(x,y,b)
     b=bant-pas*(Hes%*%(gra))[,1]
     b=sto(b,lam)
     f=fob(x,y,b)+lam*sum(abs(b))
-    if(f<fant){
+    print(pas)
+    if(pas<=tol2){
+      flag=FALSE
+    }
+    if(f<=fant){
       flag=FALSE
     }
     else{
       pas=pas*factor
     }
   }
+}
+  p[j,]=b
+}
+
+plot(l,p[,1],type="l",lwd=2,col=1,xlab="lambda",ylab="Beta")
+for (i in 2:length(b)){
+   lines(l,p[,i],col=i,lwd=2)
 }
